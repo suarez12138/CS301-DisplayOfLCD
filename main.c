@@ -44,7 +44,7 @@
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-
+uint8_t rxBuffer[20];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -57,7 +57,21 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	if (huart->Instance == USART1) {
+		static unsigned char uRx_Data[1024] = { 0 };
+		static unsigned char uLength = 0;
+		if (rxBuffer[0] == '\n') {
+			HAL_UART_Transmit(&huart1, uRx_Data, uLength, 0xffff);
+			POINT_COLOR = RED;
+			LCD_ShowString(30, 40, 200, 24, 24, (uint8_t*) uRx_Data);
+			uLength = 0;
+		} else {
+			uRx_Data[uLength] = rxBuffer[0];
+			uLength++;
+		}
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -76,8 +90,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-	uint16_t raw;
-	char msg[20];
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -91,94 +104,77 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_UART_Receive_IT(&huart1, (uint8_t*) rxBuffer, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-//	uint8_t x = 0;
+	uint8_t x = 0;
 	while (1) {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+		switch (x) {
+		case 0:
+			LCD_Clear(WHITE);
+			BACK_COLOR = WHITE;
+			break;
+		case 1:
+			LCD_Clear(BLACK);
+			BACK_COLOR = BLACK;
+			break;
+		case 2:
+			LCD_Clear(BLUE);
+			BACK_COLOR = BLUE;
+			break;
+		case 3:
+			LCD_Clear(RED);
+			BACK_COLOR = RED;
+			break;
+		case 4:
+			LCD_Clear(MAGENTA);
+			BACK_COLOR = MAGENTA;
+			break;
+		case 5:
+			LCD_Clear(GREEN);
+			BACK_COLOR = GREEN;
+			break;
+		case 6:
+			LCD_Clear(CYAN);
+			BACK_COLOR = CYAN;
+			break;
+		case 7:
+			LCD_Clear(YELLOW);
+			BACK_COLOR = YELLOW;
+			break;
+		case 8:
+			LCD_Clear(BRRED);
+			BACK_COLOR = BRRED;
+			break;
+		case 9:
+			LCD_Clear(GRAY);
+			BACK_COLOR = GRAY;
+			break;
+		case 10:
+			LCD_Clear(LGRAY);
+			BACK_COLOR = LGRAY;
+			break;
+		case 11:
+			LCD_Clear(BROWN);
+			BACK_COLOR = BROWN;
+			break;
+		}
+		POINT_COLOR = RED;
+//		LCD_ShowString(30, 40, 200, 24, 24, (uint8_t*) rxBuffer[0]);
+		LCD_ShowString(30, 70, 200, 16, 16, (uint8_t*) "TFTLCD TEST");
 		POINT_COLOR = BLACK;
-		LCD_DrawRectangle(20, 20, 220, 300);
-		LCD_Fill(21, 21, 219, 299, CYAN);
-
-		LCD_ShowString(30, 21, 190, 16, 16, (uint8_t*) "TFTLCD TEST1");
-		LCD_ShowString(21, 40, 190, 16, 16, (uint8_t*) "TFTLCD TEST2");
-		LCD_ShowNum(160,60,1234,4,15);
-
-//		if (false) {
-//			HAL_ADC_Start(&hadc1); // Wait for regular group conversion to be completed
-//			HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY); // Get ADC value
-//			raw = HAL_ADC_GetValue(&hadc1); // the voltage should be raw * (3.3/4096)(12bits)
-//			// Convert to string and print
-//			double v = raw * (3.3 / 4096);
-//			double t = ((1.43 - v) / 4.3) + 25;
-//			sprintf(msg, "%d\r\n", t);
-//			HAL_UART_Transmit(&huart1, (uint8_t*) msg, strlen(msg),HAL_MAX_DELAY);
-//		}
-//		switch (x) {
-//		case 0:
-//			LCD_Clear(WHITE);
-//			BACK_COLOR = WHITE;
-//			break;
-//		case 1:
-//			LCD_Clear(BLACK);
-//			BACK_COLOR = BLACK;
-//			break;
-//		case 2:
-//			LCD_Clear(BLUE);
-//			BACK_COLOR = BLUE;
-//			break;
-//		case 3:
-//			LCD_Clear(RED);
-//			BACK_COLOR = RED;
-//			break;
-//		case 4:
-//			LCD_Clear(MAGENTA);
-//			BACK_COLOR = MAGENTA;
-//			break;
-//		case 5:
-//			LCD_Clear(GREEN);
-//			BACK_COLOR = GREEN;
-//			break;
-//		case 6:
-//			LCD_Clear(CYAN);
-//			BACK_COLOR = CYAN;
-//			break;
-//		case 7:
-//			LCD_Clear(YELLOW);
-//			BACK_COLOR = YELLOW;
-//			break;
-//		case 8:
-//			LCD_Clear(BRRED);
-//			BACK_COLOR = BRRED;
-//			break;
-//		case 9:
-//			LCD_Clear(GRAY);
-//			BACK_COLOR = GRAY;
-//			break;
-//		case 10:
-//			LCD_Clear(LGRAY);
-//			BACK_COLOR = LGRAY;
-//			break;
-//		case 11:
-//			LCD_Clear(BROWN);
-//			BACK_COLOR = BROWN;
-//			break;
-//		}
-//		POINT_COLOR = RED;
-//		LCD_ShowString(30, 40, 200, 24, 24, (uint8_t*) "Mini STM32 ^_^");
-//		LCD_ShowString(30, 70, 200, 16, 16, (uint8_t*) "TFTLCD TEST");
-//		POINT_COLOR = BLACK;
-//		LCD_DrawRectangle(30, 150, 210, 190);
-//		LCD_Fill(31, 151, 209, 189, YELLOW);
-//		x++;
-//		if (x == 12)
-//			x = 0;
-//		HAL_Delay(2000);
+		LCD_DrawRectangle(30, 150, 210, 190);
+		LCD_Fill(31, 151, 209, 189, YELLOW);
+		x++;
+		if (x == 12)
+			x = 0;
+		HAL_Delay(2000);
 	}
   /* USER CODE END 3 */
 }
@@ -194,10 +190,13 @@ void SystemClock_Config(void)
 
   /** Initializes the CPU, AHB and APB busses clocks 
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -206,12 +205,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
