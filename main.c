@@ -1,150 +1,122 @@
-/* USER CODE BEGIN Header */
-/**
- ******************************************************************************
- * @file           : main.c
- * @brief          : Main program body
- ******************************************************************************
- * @attention
- *
- * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
- * All rights reserved.</center></h2>
- *
- * This software component is licensed by ST under BSD 3-Clause license,
- * the "License"; You may not use this file except in compliance with the
- * License. You may obtain a copy of the License at:
- *                        opensource.org/licenses/BSD-3-Clause
- *
- ******************************************************************************
- */
-/* USER CODE END Header */
 
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 #include "lcd.h"
-/* USER CODE END Includes */
+#include "string.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart1;
 
-/* USER CODE BEGIN PV */
-uint8_t rxBuffer[20];
-int jiange=20;
-int max_y=300-16-20;
-int count=0;
-static unsigned char uRx_Data[14][1024] = { 0 };
-int start[14];
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
-/* USER CODE BEGIN PFP */
 
-/* USER CODE END PFP */
+//-------------------------------------------------------------------------------------------------
 
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
+const int left=21;
+const int right=219;
+const int top=21;
+const int bottom=299;
+const int lineHeight=20;
+const int width=190;
+const int fontSize=16;
+uint8_t rxBuffer[20];
+
+//int jiange=20;
+//int max_y=300-16-20;
+//int count=0;
+//static unsigned char uRx_Data[14][1024] = { 0 };
+//static unsigned char uLength=0;
+//int start[14];
+
+int lineCount=0;
+void showString(char msg[], int position, int color) {
+	POINT_COLOR=color;
+	if (position==right) {
+		LCD_ShowString(right-(strlen(msg))*(fontSize/2), top+lineHeight+lineCount*lineHeight, width, fontSize, fontSize, (uint8_t*) msg);
+	}
+	else if (position==left) {
+		LCD_ShowString(left, top+lineHeight+lineCount*lineHeight, width, fontSize, fontSize, (uint8_t*) msg);
+	}
+	else {
+		return;
+	}
+	lineCount++;
+	POINT_COLOR=BLACK;
+}
+
+void showInput(uint8_t* msg, int length, int position, int color) {
+	POINT_COLOR=color;
+	if (position==right) {
+		LCD_ShowString(right-(length-1)*(fontSize/2), top+lineHeight+lineCount*lineHeight, width, fontSize, fontSize, msg);
+	}
+	else if (position==left) {
+		LCD_ShowString(left, top+lineHeight+lineCount*lineHeight, width, fontSize, fontSize, msg);
+	}
+	else {
+		return;
+	}
+	lineCount++;
+	POINT_COLOR=BLACK;
+}
+
+void showNumber() {
+	return;
+}
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	if (huart->Instance == USART1) {
+		static unsigned char uRx_Data[1024] = { 0 };
 		static unsigned char uLength = 0;
 		if (rxBuffer[0] == '\n') {
-			HAL_UART_Transmit(&huart1, uRx_Data[count], uLength, 0xffff);
-//			POINT_COLOR = RED;
-//			int length = sizeof(uRx_Data);
-//			printf("Number = %d", length);
-			int now_y=21;
-			start[count] = 220 - 8 * (uLength - 1);
-			for (int i=0 ; i<14;i++){
-				LCD_ShowString(start[i], now_y, 200, 16, 16, (uint8_t*) uRx_Data[i]);
-				if (now_y<=max_y)
-					now_y+=jiange;
-			}
+			HAL_UART_Transmit(&huart1, uRx_Data, uLength, 0xffff);
+			showInput((uint8_t*) uRx_Data, uLength, right, BLACK);
 			uLength = 0;
-			count++;
-			count%=14;
 		} else {
-			uRx_Data[count][uLength] = rxBuffer[0];
+			uRx_Data[uLength] = rxBuffer[0];
 			uLength++;
 		}
 	}
 }
-/* USER CODE END 0 */
 
-/**
- * @brief  The application entry point.
- * @retval int
- */
 int main(void) {
-	/* USER CODE BEGIN 1 */
-
-	/* USER CODE END 1 */
-
-	/* MCU Configuration--------------------------------------------------------*/
-
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 	HAL_Init();
 
-	/* USER CODE BEGIN Init */
-
-	/* USER CODE END Init */
-
-	/* Configure the system clock */
 	SystemClock_Config();
 
-	/* USER CODE BEGIN SysInit */
 	LCD_Init();
-	/* USER CODE END SysInit */
 
-	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
 	MX_USART1_UART_Init();
-	/* USER CODE BEGIN 2 */
+
 	HAL_UART_Receive_IT(&huart1, (uint8_t*) rxBuffer, 1);
-	/* USER CODE END 2 */
 
-	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
+//-------------------------------------------------------------------------------------------------
+	LCD_Clear(CYAN);
+	POINT_COLOR=BLACK;
+	LCD_DrawRectangle(20, 20, 220, 300);
+	LCD_Fill(left, top, right, bottom, WHITE);
+
+	showString("Question", right, BLUE);
+	showString("fffffffffffffffff", right, BLACK);
+	showString("Answer", left, BLUE);
+	showString("fuckyou", left, BLACK);
+	showString("Question", right, BLUE);
+//-------------------------------------------------------------------------------------------------
+
 	while (1) {
-		/* USER CODE END WHILE */
-
-		/* USER CODE BEGIN 3 */
-		POINT_COLOR = BLACK;
-		LCD_DrawRectangle(20, 20, 220, 300);
-		LCD_Fill(21, 21, 219, 299, CYAN);
-
-		LCD_ShowString(21, 21, 190, 16, 16,
-				(uint8_t*) "TFTLCDddfafdadfadsTESsdfsdddT1");
-		LCD_ShowString(21, 41, 190, 16, 16, (uint8_t*) "TFTLCD TEST2");
-		POINT_COLOR = RED;
-		int now_y=21;
-		for (int i=0 ; i<14;i++){
-			LCD_ShowString(start[i], now_y, 200, 16, 16, (uint8_t*) uRx_Data[i]);
-			if (now_y<=max_y)
-				now_y+=jiange;
-		}
+//		LCD_ShowString(21, 21, 190, 16, 16,
+//				(uint8_t*) "TFTLCDddfafdadfadsTESsdfsdddT1");
+//		LCD_ShowString(21, 41, 190, 16, 16, (uint8_t*) "TFTLCD TEST2");
+//		POINT_COLOR = RED;
+//		int now_y=21;
+//		for (int i=0 ; i<14;i++){
+//			LCD_ShowString(start[i], now_y, 200, 16, 16, (uint8_t*) uRx_Data[i]);
+//			if (now_y<=max_y)
+//				now_y+=jiange;
+//		}
 //		LCD_ShowNum(160, 60, 1234, 4, 15);
 
-		HAL_Delay(2000);
+//		HAL_Delay(2000);
 	}
-	/* USER CODE END 3 */
 }
 
 /**
