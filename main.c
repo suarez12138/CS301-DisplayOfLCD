@@ -1,4 +1,3 @@
-
 #include "main.h"
 #include "lcd.h"
 #include "string.h"
@@ -11,55 +10,95 @@ static void MX_USART1_UART_Init(void);
 
 //-------------------------------------------------------------------------------------------------
 
-const int left=21;
-const int right=219;
-const int top=21;
-const int bottom=299;
-const int lineHeight=20;
-const int width=190;
-const int fontSize=16;
+const int left = 21;
+const int right = 219;
+const int top = 21;
+const int bottom = 299;
+const int lineHeight = 20;
+const int width = 190;
+const int fontSize = 16;
 uint8_t rxBuffer[20];
 
 //int jiange=20;
 //int max_y=300-16-20;
-//int count=0;
-//static unsigned char uRx_Data[14][1024] = { 0 };
+//int memoryCount=0;
+uint8_t memoryData[14][24] = { 0 };
+int memoryPosition[14];
 //static unsigned char uLength=0;
 //int start[14];
 
-int lineCount=0;
+int lineCount = 0;
+int end=0;
 void showString(char msg[], int position, int color) {
-	POINT_COLOR=color;
-	if (position==right) {
-		LCD_ShowString(right-(strlen(msg))*(fontSize/2), top+lineHeight+lineCount*lineHeight, width, fontSize, fontSize, (uint8_t*) msg);
-	}
-	else if (position==left) {
-		LCD_ShowString(left, top+lineHeight+lineCount*lineHeight, width, fontSize, fontSize, (uint8_t*) msg);
-	}
-	else {
+	POINT_COLOR = color;
+	int startPoint;
+	if (position == right) {
+		POINT_COLOR = GREEN;
+		startPoint=right - (strlen(msg)) * (fontSize / 2);
+		LCD_ShowString(startPoint,
+				top + lineCount * lineHeight, width, fontSize, fontSize,
+				(uint8_t*) msg);
+	} else if (position == left) {
+		POINT_COLOR = RED;
+		startPoint=left;
+		LCD_ShowString(left, top + lineCount * lineHeight, width, fontSize,
+				fontSize, (uint8_t*) msg);
+	} else {
 		return;
 	}
-	lineCount++;
-	POINT_COLOR=BLACK;
+	if (lineCount == 13 && end) {
+		rolling(msg,startPoint);
+	} else {
+		for (int k = 0; k < strlen(msg); k++)
+			memoryData[lineCount][k] = msg[k];
+		memoryPosition[lineCount]=startPoint;
+		if (lineCount < 13)
+			lineCount++;
+		else end=1;
+	}
 }
 
-void showInput(uint8_t* msg, int length, int position, int color) {
-	POINT_COLOR=color;
-	if (position==right) {
-		LCD_ShowString(right-(length-1)*(fontSize/2), top+lineHeight+lineCount*lineHeight, width, fontSize, fontSize, msg);
+void showInput(uint8_t *msg, int length, int color) {
+	POINT_COLOR = color;
+	int startPoint=right - (length - 1) * (fontSize / 2);
+	LCD_ShowString(startPoint,
+			top + lineCount * lineHeight, width, fontSize, fontSize, msg);
+	if (lineCount == 13 && end) {
+		rolling(msg,startPoint);
+	} else {
+		for (int k = 0; k < length; k++)
+			memoryData[lineCount][k] = msg[k];
+		memoryPosition[lineCount]=startPoint;
+		if (lineCount < 13)
+				lineCount++;
+			else end=1;
 	}
-	else if (position==left) {
-		LCD_ShowString(left, top+lineHeight+lineCount*lineHeight, width, fontSize, fontSize, msg);
-	}
-	else {
-		return;
-	}
-	lineCount++;
-	POINT_COLOR=BLACK;
 }
 
 void showNumber() {
 	return;
+}
+
+void rolling(char msg[],int startPoint) {
+	for (int i = 0; i < 13; i++) {
+		for (int j = 0; j < 24; j++) {
+			memoryData[i][j] = memoryData[i + 1][j];
+		}
+		memoryPosition[i]=memoryPosition[i+1];
+	}
+	for (int j = 0; j < 24; j++) {
+		memoryData[13][j] = msg[j];
+	}
+	memoryPosition[13]=startPoint;
+	LCD_Fill(left, top, right, bottom, WHITE);
+	for (int i = 0; i < 14; i++) {
+		if(memoryPosition[i]==left)
+			POINT_COLOR = RED;
+		else
+			POINT_COLOR = GREEN;
+		LCD_ShowString(memoryPosition[i],
+				top + i * lineHeight, width, fontSize, fontSize, memoryData[i]);
+	}
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
@@ -68,7 +107,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 		static unsigned char uLength = 0;
 		if (rxBuffer[0] == '\n') {
 			HAL_UART_Transmit(&huart1, uRx_Data, uLength, 0xffff);
-			showInput((uint8_t*) uRx_Data, uLength, right, BLACK);
+			if (uLength < 25)
+				showInput((uint8_t*) uRx_Data, uLength, GREEN);
+			else {
+				for (int i = 0; i < uLength; i += 24) {
+					char result[24];
+					for (int j = 0; j < 24; j++) {
+						result[j] = uRx_Data[i + j];
+					}
+					if (uLength - i > 24)
+						showInput((uint8_t*) result, 25, GREEN);
+					else
+						showInput((uint8_t*) result, uLength % 24, GREEN);
+				}
+			}
 			uLength = 0;
 		} else {
 			uRx_Data[uLength] = rxBuffer[0];
@@ -91,7 +143,7 @@ int main(void) {
 
 //-------------------------------------------------------------------------------------------------
 	LCD_Clear(CYAN);
-	POINT_COLOR=BLACK;
+	POINT_COLOR = BLACK;
 	LCD_DrawRectangle(20, 20, 220, 300);
 	LCD_Fill(left, top, right, bottom, WHITE);
 
@@ -106,7 +158,7 @@ int main(void) {
 //		LCD_ShowString(21, 21, 190, 16, 16,
 //				(uint8_t*) "TFTLCDddfafdadfadsTESsdfsdddT1");
 //		LCD_ShowString(21, 41, 190, 16, 16, (uint8_t*) "TFTLCD TEST2");
-//		POINT_COLOR = RED;
+//		startPoint_COLOR = RED;
 //		int now_y=21;
 //		for (int i=0 ; i<14;i++){
 //			LCD_ShowString(start[i], now_y, 200, 16, 16, (uint8_t*) uRx_Data[i]);
