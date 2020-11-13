@@ -1,7 +1,8 @@
-
+//#include<stdlib.h>
 #include "main.h"
 #include "lcd.h"
 #include "string.h"
+#include <stdio.h>
 
 ADC_HandleTypeDef hadc1;
 UART_HandleTypeDef huart1;
@@ -22,7 +23,7 @@ const int width = 190;
 const int fontSize = 16;
 uint8_t rxBuffer[20];
 uint16_t raw;
-char temperature[20];
+
 
 uint8_t memoryData[14][24] = { 0 };
 int memoryPosition[14];
@@ -74,11 +75,14 @@ void showInput(uint8_t *msg, int length, int color) {
 	}
 }
 
-int isAsk(char msg[]) {
-	return !strcasecmp(msg, "temperature");
-}
+//int isAsk(char msg[]) {
+//	return !strcasecmp(msg, "temperature");
+//}
 
 void showTemperature() {
+	char temperature[20];
+	HAL_ADC_Start(&hadc1);
+	HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	raw = HAL_ADC_GetValue(&hadc1);
 	double v=raw*(3.3/4096);
 	double t=((1.43-v)/4.3)+25;
@@ -86,7 +90,7 @@ void showTemperature() {
 	HAL_UART_Transmit(&huart1, (uint8_t*)temperature, strlen(temperature), HAL_MAX_DELAY);
 	showString("Answer", left);
 	showString(temperature, left);
-	HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+//	HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	showString("Question", right);
 	return;
 }
@@ -121,9 +125,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			HAL_UART_Transmit(&huart1, uRx_Data, uLength, 0xffff);
 			if (uLength < 25) {
 				showInput((uint8_t*) uRx_Data, uLength, GREEN);
-//				char *ask;
-//				strncpy(ask, uRx_Data, uLength);
-//				if (isAsk(ask))
+				char t[12]="temperature";
+				int judge=1;
+				for(int i=0;i<11;i++){
+					if(t[i]!=uRx_Data[i]){
+						judge=0;
+						break;
+					}
+				}
+				if (judge)
 					showTemperature();
 			}
 			else {
@@ -157,7 +167,7 @@ int main(void)
   LCD_Init();
   HAL_UART_Receive_IT(&huart1, (uint8_t*) rxBuffer, 1);
 
-  HAL_ADC_Start(&hadc1);
+//  HAL_ADC_Start(&hadc1);
 
 //-------------------------------------------------------------------------------------------------
   	LCD_Clear(CYAN);
